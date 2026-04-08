@@ -1,28 +1,28 @@
-# aws-durable-order-workflow
+# aws-durable-order-workflow ⚡
 
 A serverless order approval workflow built with AWS Durable Functions. Demonstrates stateful, long-running workflows on Lambda with human-in-the-loop approval across three execution paths.
 
-## The problem this solves
+## The problem this solves ⚠️💸
 
 Traditional order approval systems need polling loops, queues, and a database tracking "pending" states — costing $85–230/month minimum.
 
 This implementation uses a single Lambda function that **pauses mid-execution** waiting for human approval. No servers running while waiting. No cost accumulating.
 
-**Cost comparison:**
+**Cost comparison:** 💰
 | Architecture | Monthly cost |
 |---|---|
 | Traditional (EC2 + RDS + SQS) | $85–230/month |
 | Durable Functions (Lambda + S3) | < $1/month |
 
-## The 3 execution paths
+## The 3 execution paths 🛣️ 
 
 | Path | Amount | Approval | Approver | Behavior |
 |---|---|---|---|---|
-| Standard | ≤ $1,000 | None | — | Completes instantly |
-| Express | $1,001–$2,000 | Required | Supervisor | Pauses, waits for signal |
-| Premium | $2,001+ | Required | Manager | Pauses, waits for signal |
+|🟢Standard | ≤ $1,000 | None | — | Completes instantly |
+|🟡Express | $1,001–$2,000 | Required | Supervisor | Pauses, waits for signal |
+|🔴Premium | $2,001+ | Required | Manager | Pauses, waits for signal |
 
-## Architecture
+## Architecture 🏗️ 
 
 API Gateway → my-order-workflow (Lambda) 
 ├── validate_order 
@@ -60,7 +60,7 @@ if isinstance(approval_result, str):
 approved = approval_result.get('approved', False)
 ```
 
-## Testing all 3 paths
+## Testing all 3 paths 🧪 
 ```bash
 # Standard
 echo '{"orderId": "STD-001", "amount": 500, "customer": "John Doe"}' > payload_std.json
@@ -101,7 +101,7 @@ aws lambda send-durable-execution-callback-success \
   --region us-east-1
 ```
 
-## Requirements
+## Requirements ⚙️ 
 
 - AWS account (Academy or standard)
 - Python 3.12+
