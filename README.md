@@ -1,44 +1,67 @@
-# aws-durable-order-workflow ⚡
+# aws-durable-order-workflow
 
 A serverless order approval workflow built with AWS Durable Functions. Demonstrates stateful, long-running workflows on Lambda with human-in-the-loop approval across three execution paths.
 
-## The problem this solves ⚠️💸
+---
+
+## 💸 The problem this solves
 
 Traditional order approval systems need polling loops, queues, and a database tracking "pending" states — costing $85–230/month minimum.
 
 This implementation uses a single Lambda function that **pauses mid-execution** waiting for human approval. No servers running while waiting. No cost accumulating.
 
-**Cost comparison:** 💰
 | Architecture | Monthly cost |
 |---|---|
 | Traditional (EC2 + RDS + SQS) | $85–230/month |
 | Durable Functions (Lambda + S3) | < $1/month |
 
-## The 3 execution paths 🛣️ 
+---
+
+## 🔀 The 3 execution paths
 
 | Path | Amount | Approval | Approver | Behavior |
 |---|---|---|---|---|
-|🟢Standard | ≤ $1,000 | None | — | Completes instantly |
-|🟡Express | $1,001–$2,000 | Required | Supervisor | Pauses, waits for signal |
-|🔴Premium | $2,001+ | Required | Manager | Pauses, waits for signal |
+| 🟢 Standard | ≤ $1,000 | None | — | Completes instantly |
+| 🟡 Express | $1,001–$2,000 | Required | Supervisor | Pauses, waits for signal |
+| 🔴 Premium | $2,001+ | Required | Manager | Pauses, waits for signal |
 
-## Architecture 🏗️ 
+**🟢 Standard** — validate → classify → charge → ship. Done in under 3 seconds. Zero human involvement.
 
-API Gateway → my-order-workflow (Lambda) 
-├── validate_order 
-├── classify_order
-├── [send_approval_email + wait_for_callback] ← Express/Premium only 
-├── process_payment 
-└── arrange_shipping
+**🟡 Express** — workflow sends approval email, then pauses. Lambda shuts down. State checkpointed to S3. Resumes the moment supervisor approves.
+
+**🔴 Premium** — same suspension pattern but for high-value orders requiring manager sign-off. Can wait hours, days, or weeks. No cost while waiting.
+
+---
+
+## 🏗️ Architecture
+
+```
+API Gateway → my-order-workflow (Lambda)
+                ├── validate_order
+                ├── classify_order
+                ├── [send_approval_email + wait_for_callback]  ← Express/Premium only
+                ├── process_payment
+                └── arrange_shipping
+
 Approval signal → API Gateway /callback → my-approval-handler → send-durable-execution-callback-success
-## Project structure
-aws-durable-order-workflow/ 
-├── order_workflow.py # Main durable workflow 
-├── business_logic.py # Step functions (validate, classify, pay, ship) 
-├── approval_handler.py # Callback receiver + SES email sender 
-├── template.yaml # SAM infrastructure template 
-└── requirements.txt # Python dependencies
-## Key implementation notes
+```
+
+---
+
+## 📁 Project structure
+
+```
+aws-durable-order-workflow/
+├── order_workflow.py       # Main durable workflow
+├── business_logic.py       # Step functions (validate, classify, pay, ship)
+├── approval_handler.py     # Callback receiver + SES email sender
+├── template.yaml           # SAM infrastructure template
+└── requirements.txt        # Python dependencies
+```
+
+---
+
+## ⚙️ Key implementation notes
 
 **context.step() wrapping** — the SDK expects a callable taking a StepContext:
 ```python
@@ -60,15 +83,18 @@ if isinstance(approval_result, str):
 approved = approval_result.get('approved', False)
 ```
 
-## Testing all 3 paths 🧪 
+---
+
+## 🧪 Testing all 3 paths
+
 ```bash
-# Standard
+# 🟢 Standard
 echo '{"orderId": "STD-001", "amount": 500, "customer": "John Doe"}' > payload_std.json
 
-# Express
+# 🟡 Express
 echo '{"orderId": "EXP-001", "amount": 1500, "customer": "Jane Smith"}' > payload_exp.json
 
-# Premium
+# 🔴 Premium
 echo '{"orderId": "PRM-001", "amount": 5000, "customer": "Bob Johnson"}' > payload_prm.json
 
 aws lambda invoke \
@@ -101,7 +127,9 @@ aws lambda send-durable-execution-callback-success \
   --region us-east-1
 ```
 
-## Requirements ⚙️ 
+---
+
+## 📦 Requirements
 
 - AWS account (Academy or standard)
 - Python 3.12+
@@ -110,6 +138,8 @@ aws lambda send-durable-execution-callback-success \
 - S3 bucket for execution checkpoints
 - SES verified email for approval notifications
 
-## Built with
+---
+
+## 🛠️ Built with
 
 AWS Lambda · AWS Durable Execution SDK · API Gateway · S3 · SES · Python · AWS PowerTools
