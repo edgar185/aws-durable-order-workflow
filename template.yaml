@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: My Durable Functions App
+
+Resources:
+  OrderWorkflowFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: order_workflow.lambda_handler
+      Runtime: python3.13
+      Timeout: 900
+      Environment:
+        Variables:
+          DURABLE_CHECKPOINT_BUCKET: my-durable-checkpoints-845270316634
+          DURABLE_EXECUTION_TIMEOUT: 900
+          DURABLE_STEP_SEMANTICS: AT_LEAST_ONCE
+      Policies:
+        - S3FullAccessPolicy: {BucketName: my-durable-checkpoints-845270316646}
+        - SESCrudPolicy: {Source: "your-email@example.com"}
+
+  ApprovalHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: approval_handler.lambda_handler
+      Runtime: python3.13
+      Events:
+        CallbackApi:
+          Type: Api
+          Properties:
+            Path: /callback
+            Method: get
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: "lambda:CompleteDurableExecutionExternalEvent"
+              Resource: "*"
